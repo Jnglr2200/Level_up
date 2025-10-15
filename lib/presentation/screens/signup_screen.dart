@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../data/services/player_data_service.dart'; // Importa el servicio de datos
-import 'main_navigator.dart'; // Para navegar a la pantalla principal
+import '../../data/services/player_data_service.dart';
+import 'habit_selection_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -12,13 +12,14 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController(); // <-- CONTROLLER PARA EL NOMBRE
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isPasswordVisible = false;
 
   @override
   void dispose() {
-    _nameController.dispose(); // <-- No olvides el dispose
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -35,11 +36,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
             padding: const EdgeInsets.all(32.0),
             child: Column(
               children: [
-                // ... (puedes añadir un logo o título aquí)
                 Text('¡Únete a la Aventura!', style: GoogleFonts.orbitron(fontSize: 24)),
                 const SizedBox(height: 32),
-
-                // --- NUEVO CAMPO PARA EL NOMBRE ---
                 TextFormField(
                   controller: _nameController,
                   validator: (value) {
@@ -52,44 +50,59 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   style: GoogleFonts.orbitron(),
                 ),
                 const SizedBox(height: 16),
-
-                // --- Campos de Email y Contraseña (sin cambios) ---
                 TextFormField(
                   controller: _emailController,
-                  validator: (value) { /* ... validación ... */ return null; },
                   decoration: const InputDecoration(labelText: 'Email'),
                   style: GoogleFonts.orbitron(),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _passwordController,
-                  obscureText: true,
-                  validator: (value) { /* ... validación ... */ return null; },
-                  decoration: const InputDecoration(labelText: 'Contraseña'),
+                  obscureText: !_isPasswordVisible,
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
                   style: GoogleFonts.orbitron(),
                 ),
                 const SizedBox(height: 32),
-
-                // --- LÓGICA DEL BOTÓN ACTUALIZADA ---
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     child: const Text('Registrarse'),
-                    onPressed: () async { // <-- Convertido a async
+                    onPressed: () async {
                       if (_formKey.currentState?.validate() ?? false) {
-                        // 1. Guarda los datos iniciales del nuevo usuario
-                        await PlayerDataService().saveData(
-                          name: _nameController.text,
-                          level: 1,
-                          xp: 0,
-                          streak: 0,
+                        final email = _emailController.text;
+                        final password = _passwordController.text;
+                        final name = _nameController.text;
+
+                        // 1. Registra al jugador
+                        await PlayerDataService().registerPlayer(
+                          name: name,
+                          email: email,
+                          password: password,
                         );
 
-                        // 2. Navega directamente a la pantalla principal
-                        // El pushReplacement evita que el usuario pueda volver atrás a la pantalla de registro
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (context) => const MainNavigator()),
-                        );
+                        // 2. Inicia sesión para obtener el objeto Player
+                        final player = await PlayerDataService().login(email, password);
+
+                        // 3. Navega pasándole el objeto Player
+                        if (player != null && mounted) {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (context) => HabitSelectionScreen(player: player),
+                            ),
+                          );
+                        }
                       }
                     },
                   ),

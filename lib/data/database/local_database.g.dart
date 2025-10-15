@@ -22,6 +22,19 @@ class $PlayersTable extends Players with TableInfo<$PlayersTable, Player> {
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _emailMeta = const VerificationMeta('email');
+  @override
+  late final GeneratedColumn<String> email = GeneratedColumn<String>(
+      'email', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+  static const VerificationMeta _passwordMeta =
+      const VerificationMeta('password');
+  @override
+  late final GeneratedColumn<String> password = GeneratedColumn<String>(
+      'password', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _levelMeta = const VerificationMeta('level');
   @override
   late final GeneratedColumn<int> level = GeneratedColumn<int>(
@@ -60,8 +73,17 @@ class $PlayersTable extends Players with TableInfo<$PlayersTable, Player> {
           'CHECK ("has_selected_habits" IN (0, 1))'),
       defaultValue: const Constant(false));
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, name, level, xp, streak, selectedHabits, hasSelectedHabits];
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        email,
+        password,
+        level,
+        xp,
+        streak,
+        selectedHabits,
+        hasSelectedHabits
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -80,6 +102,18 @@ class $PlayersTable extends Players with TableInfo<$PlayersTable, Player> {
           _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
     } else if (isInserting) {
       context.missing(_nameMeta);
+    }
+    if (data.containsKey('email')) {
+      context.handle(
+          _emailMeta, email.isAcceptableOrUnknown(data['email']!, _emailMeta));
+    } else if (isInserting) {
+      context.missing(_emailMeta);
+    }
+    if (data.containsKey('password')) {
+      context.handle(_passwordMeta,
+          password.isAcceptableOrUnknown(data['password']!, _passwordMeta));
+    } else if (isInserting) {
+      context.missing(_passwordMeta);
     }
     if (data.containsKey('level')) {
       context.handle(
@@ -117,6 +151,10 @@ class $PlayersTable extends Players with TableInfo<$PlayersTable, Player> {
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      email: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}email'])!,
+      password: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}password'])!,
       level: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}level'])!,
       xp: attachedDatabase.typeMapping
@@ -139,6 +177,8 @@ class $PlayersTable extends Players with TableInfo<$PlayersTable, Player> {
 class Player extends DataClass implements Insertable<Player> {
   final int id;
   final String name;
+  final String email;
+  final String password;
   final int level;
   final int xp;
   final int streak;
@@ -147,6 +187,8 @@ class Player extends DataClass implements Insertable<Player> {
   const Player(
       {required this.id,
       required this.name,
+      required this.email,
+      required this.password,
       required this.level,
       required this.xp,
       required this.streak,
@@ -157,6 +199,8 @@ class Player extends DataClass implements Insertable<Player> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
+    map['email'] = Variable<String>(email);
+    map['password'] = Variable<String>(password);
     map['level'] = Variable<int>(level);
     map['xp'] = Variable<int>(xp);
     map['streak'] = Variable<int>(streak);
@@ -171,6 +215,8 @@ class Player extends DataClass implements Insertable<Player> {
     return PlayersCompanion(
       id: Value(id),
       name: Value(name),
+      email: Value(email),
+      password: Value(password),
       level: Value(level),
       xp: Value(xp),
       streak: Value(streak),
@@ -187,6 +233,8 @@ class Player extends DataClass implements Insertable<Player> {
     return Player(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      email: serializer.fromJson<String>(json['email']),
+      password: serializer.fromJson<String>(json['password']),
       level: serializer.fromJson<int>(json['level']),
       xp: serializer.fromJson<int>(json['xp']),
       streak: serializer.fromJson<int>(json['streak']),
@@ -200,6 +248,8 @@ class Player extends DataClass implements Insertable<Player> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
+      'email': serializer.toJson<String>(email),
+      'password': serializer.toJson<String>(password),
       'level': serializer.toJson<int>(level),
       'xp': serializer.toJson<int>(xp),
       'streak': serializer.toJson<int>(streak),
@@ -211,6 +261,8 @@ class Player extends DataClass implements Insertable<Player> {
   Player copyWith(
           {int? id,
           String? name,
+          String? email,
+          String? password,
           int? level,
           int? xp,
           int? streak,
@@ -219,6 +271,8 @@ class Player extends DataClass implements Insertable<Player> {
       Player(
         id: id ?? this.id,
         name: name ?? this.name,
+        email: email ?? this.email,
+        password: password ?? this.password,
         level: level ?? this.level,
         xp: xp ?? this.xp,
         streak: streak ?? this.streak,
@@ -230,6 +284,8 @@ class Player extends DataClass implements Insertable<Player> {
     return Player(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      email: data.email.present ? data.email.value : this.email,
+      password: data.password.present ? data.password.value : this.password,
       level: data.level.present ? data.level.value : this.level,
       xp: data.xp.present ? data.xp.value : this.xp,
       streak: data.streak.present ? data.streak.value : this.streak,
@@ -247,6 +303,8 @@ class Player extends DataClass implements Insertable<Player> {
     return (StringBuffer('Player(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('email: $email, ')
+          ..write('password: $password, ')
           ..write('level: $level, ')
           ..write('xp: $xp, ')
           ..write('streak: $streak, ')
@@ -257,14 +315,16 @@ class Player extends DataClass implements Insertable<Player> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, name, level, xp, streak, selectedHabits, hasSelectedHabits);
+  int get hashCode => Object.hash(id, name, email, password, level, xp, streak,
+      selectedHabits, hasSelectedHabits);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Player &&
           other.id == this.id &&
           other.name == this.name &&
+          other.email == this.email &&
+          other.password == this.password &&
           other.level == this.level &&
           other.xp == this.xp &&
           other.streak == this.streak &&
@@ -275,6 +335,8 @@ class Player extends DataClass implements Insertable<Player> {
 class PlayersCompanion extends UpdateCompanion<Player> {
   final Value<int> id;
   final Value<String> name;
+  final Value<String> email;
+  final Value<String> password;
   final Value<int> level;
   final Value<int> xp;
   final Value<int> streak;
@@ -283,6 +345,8 @@ class PlayersCompanion extends UpdateCompanion<Player> {
   const PlayersCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.email = const Value.absent(),
+    this.password = const Value.absent(),
     this.level = const Value.absent(),
     this.xp = const Value.absent(),
     this.streak = const Value.absent(),
@@ -292,15 +356,21 @@ class PlayersCompanion extends UpdateCompanion<Player> {
   PlayersCompanion.insert({
     this.id = const Value.absent(),
     required String name,
+    required String email,
+    required String password,
     this.level = const Value.absent(),
     this.xp = const Value.absent(),
     this.streak = const Value.absent(),
     this.selectedHabits = const Value.absent(),
     this.hasSelectedHabits = const Value.absent(),
-  }) : name = Value(name);
+  })  : name = Value(name),
+        email = Value(email),
+        password = Value(password);
   static Insertable<Player> custom({
     Expression<int>? id,
     Expression<String>? name,
+    Expression<String>? email,
+    Expression<String>? password,
     Expression<int>? level,
     Expression<int>? xp,
     Expression<int>? streak,
@@ -310,6 +380,8 @@ class PlayersCompanion extends UpdateCompanion<Player> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (email != null) 'email': email,
+      if (password != null) 'password': password,
       if (level != null) 'level': level,
       if (xp != null) 'xp': xp,
       if (streak != null) 'streak': streak,
@@ -321,6 +393,8 @@ class PlayersCompanion extends UpdateCompanion<Player> {
   PlayersCompanion copyWith(
       {Value<int>? id,
       Value<String>? name,
+      Value<String>? email,
+      Value<String>? password,
       Value<int>? level,
       Value<int>? xp,
       Value<int>? streak,
@@ -329,6 +403,8 @@ class PlayersCompanion extends UpdateCompanion<Player> {
     return PlayersCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      email: email ?? this.email,
+      password: password ?? this.password,
       level: level ?? this.level,
       xp: xp ?? this.xp,
       streak: streak ?? this.streak,
@@ -345,6 +421,12 @@ class PlayersCompanion extends UpdateCompanion<Player> {
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
+    }
+    if (email.present) {
+      map['email'] = Variable<String>(email.value);
+    }
+    if (password.present) {
+      map['password'] = Variable<String>(password.value);
     }
     if (level.present) {
       map['level'] = Variable<int>(level.value);
@@ -369,6 +451,8 @@ class PlayersCompanion extends UpdateCompanion<Player> {
     return (StringBuffer('PlayersCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('email: $email, ')
+          ..write('password: $password, ')
           ..write('level: $level, ')
           ..write('xp: $xp, ')
           ..write('streak: $streak, ')
@@ -393,6 +477,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$PlayersTableCreateCompanionBuilder = PlayersCompanion Function({
   Value<int> id,
   required String name,
+  required String email,
+  required String password,
   Value<int> level,
   Value<int> xp,
   Value<int> streak,
@@ -402,6 +488,8 @@ typedef $$PlayersTableCreateCompanionBuilder = PlayersCompanion Function({
 typedef $$PlayersTableUpdateCompanionBuilder = PlayersCompanion Function({
   Value<int> id,
   Value<String> name,
+  Value<String> email,
+  Value<String> password,
   Value<int> level,
   Value<int> xp,
   Value<int> streak,
@@ -423,6 +511,12 @@ class $$PlayersTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get email => $composableBuilder(
+      column: $table.email, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get password => $composableBuilder(
+      column: $table.password, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get level => $composableBuilder(
       column: $table.level, builder: (column) => ColumnFilters(column));
@@ -457,6 +551,12 @@ class $$PlayersTableOrderingComposer
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get email => $composableBuilder(
+      column: $table.email, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get password => $composableBuilder(
+      column: $table.password, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get level => $composableBuilder(
       column: $table.level, builder: (column) => ColumnOrderings(column));
 
@@ -489,6 +589,12 @@ class $$PlayersTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get email =>
+      $composableBuilder(column: $table.email, builder: (column) => column);
+
+  GeneratedColumn<String> get password =>
+      $composableBuilder(column: $table.password, builder: (column) => column);
 
   GeneratedColumn<int> get level =>
       $composableBuilder(column: $table.level, builder: (column) => column);
@@ -531,6 +637,8 @@ class $$PlayersTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<String> name = const Value.absent(),
+            Value<String> email = const Value.absent(),
+            Value<String> password = const Value.absent(),
             Value<int> level = const Value.absent(),
             Value<int> xp = const Value.absent(),
             Value<int> streak = const Value.absent(),
@@ -540,6 +648,8 @@ class $$PlayersTableTableManager extends RootTableManager<
               PlayersCompanion(
             id: id,
             name: name,
+            email: email,
+            password: password,
             level: level,
             xp: xp,
             streak: streak,
@@ -549,6 +659,8 @@ class $$PlayersTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String name,
+            required String email,
+            required String password,
             Value<int> level = const Value.absent(),
             Value<int> xp = const Value.absent(),
             Value<int> streak = const Value.absent(),
@@ -558,6 +670,8 @@ class $$PlayersTableTableManager extends RootTableManager<
               PlayersCompanion.insert(
             id: id,
             name: name,
+            email: email,
+            password: password,
             level: level,
             xp: xp,
             streak: streak,

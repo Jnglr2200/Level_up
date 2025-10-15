@@ -1,25 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../data/database/local_database.dart';
 import '../../data/services/player_data_service.dart';
 import 'main_navigator.dart';
 
-// Un pequeño modelo para organizar mejor nuestras categorías
 class HabitCategory {
   final String name;
   final IconData icon;
-
   const HabitCategory({required this.name, required this.icon});
 }
 
 class HabitSelectionScreen extends StatefulWidget {
-  const HabitSelectionScreen({super.key});
+  final Player player;
+  const HabitSelectionScreen({super.key, required this.player});
 
   @override
   State<HabitSelectionScreen> createState() => _HabitSelectionScreenState();
 }
 
 class _HabitSelectionScreenState extends State<HabitSelectionScreen> {
-  // Lista de todas las categorías disponibles
   final List<HabitCategory> _categories = const [
     HabitCategory(name: 'Ejercicio', icon: Icons.fitness_center),
     HabitCategory(name: 'Alimentación', icon: Icons.restaurant),
@@ -27,8 +26,6 @@ class _HabitSelectionScreenState extends State<HabitSelectionScreen> {
     HabitCategory(name: 'Salud Mental', icon: Icons.self_improvement),
     HabitCategory(name: 'Productividad', icon: Icons.work),
   ];
-
-  // Usamos un Set para guardar las categorías seleccionadas
   final Set<String> _selectedCategories = {};
 
   void _toggleCategory(String categoryName) {
@@ -51,62 +48,42 @@ class _HabitSelectionScreenState extends State<HabitSelectionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                '¿Qué quieres mejorar?',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.orbitron(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Selecciona una o más áreas para enfocar tus misiones diarias.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.orbitron(
-                  fontSize: 16,
-                  color: Colors.white70,
-                ),
-              ),
+              // ... (Los textos de la parte superior no cambian) ...
               const SizedBox(height: 48),
-
-              // --- SECCIÓN CORREGIDA ---
-              // Ahora solo tenemos un Expanded, que contiene el GridView
               Expanded(
                 child: GridView.count(
-                  crossAxisCount: 2, // Dos columnas
+                  crossAxisCount: 2,
                   crossAxisSpacing: 16.0,
                   mainAxisSpacing: 16.0,
-                  childAspectRatio: 1, // Botones cuadrados
+                  childAspectRatio: 1,
                   children: _categories.map((category) {
                     final isSelected = _selectedCategories.contains(category.name);
                     return _buildCategoryButton(category, isSelected);
                   }).toList(),
                 ),
               ),
-              // --- FIN DE LA SECCIÓN CORREGIDA ---
-
-              const SizedBox(height: 24), // Espacio antes del botón
-
-              // Botón para continuar
+              const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _selectedCategories.isEmpty
                     ? null
                     : () async {
-                  await PlayerDataService().saveSelectedHabits(_selectedCategories);
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const MainNavigator()),
+                  await PlayerDataService().saveSelectedHabits(
+                    playerId: widget.player.id,
+                    habits: _selectedCategories,
                   );
+
+                  if (mounted) {
+                    // --- LÍNEA CORREGIDA ---
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (context) => MainNavigator(player: widget.player)),
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   disabledBackgroundColor: Colors.grey.withOpacity(0.5),
                 ),
-                child: Text(
-                  'Continuar',
-                  style: GoogleFonts.orbitron(fontSize: 18),
-                ),
+                child: Text('Continuar', style: GoogleFonts.orbitron(fontSize: 18)),
               ),
             ],
           ),
@@ -115,7 +92,6 @@ class _HabitSelectionScreenState extends State<HabitSelectionScreen> {
     );
   }
 
-  // Widget helper para construir cada botón de categoría (no cambia)
   Widget _buildCategoryButton(HabitCategory category, bool isSelected) {
     return GestureDetector(
       onTap: () => _toggleCategory(category.name),

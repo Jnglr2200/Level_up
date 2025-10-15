@@ -1,18 +1,18 @@
-// lib/data/database/local_database.dart
-import 'dart:ffi'; // <-- AÑADE ESTA LÍNEA
-
-import 'dart:io';
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
+
+// La importación mágica que elige el archivo correcto según la plataforma
+import 'stub.dart'
+if (dart.library.io) 'native.dart'
+if (dart.library.html) 'web.dart';
 
 part 'local_database.g.dart';
 
-// 1. Define tu tabla para los datos del jugador
+// La definición de la tabla no cambia
 class Players extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text()();
+  TextColumn get email => text().unique()();
+  TextColumn get password => text()();
   IntColumn get level => integer().withDefault(const Constant(1))();
   IntColumn get xp => integer().withDefault(const Constant(0))();
   IntColumn get streak => integer().withDefault(const Constant(0))();
@@ -20,24 +20,54 @@ class Players extends Table {
   BoolColumn get hasSelectedHabits => boolean().withDefault(const Constant(false))();
 }
 
-// 2. Define la clase de la base de datos
 @DriftDatabase(tables: [Players])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  // El constructor ahora es súper simple
+  AppDatabase() : super(connect());
 
   @override
   int get schemaVersion => 1;
 
-  // Funciones para interactuar con la tabla 'Players'
-  Future<Player?> getPlayer() => (select(players)..where((tbl) => tbl.id.equals(1))).getSingleOrNull();
-  Future<void> upsertPlayer(PlayersCompanion entry) => into(players).insertOnConflictUpdate(entry);
-}
+  // --- MÉTODOS DE ACCESO A DATOS (DAO) ---
 
-// 3. Define dónde se guardará el archivo de la base de datos
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'db.sqlite'));
-    return NativeDatabase.createInBackground(file);
-  });
+  // Obtener un jugador por su email
+  Future<Player?> getPlayerByEmail(String email) {
+    return (select(players)..where((tbl) => tbl.email.equals(email))).getSingleOrNull();
+  }
+
+  // Insertar o actualizar un jugador
+  Future<void> upsertPlayer(PlayersCompanion entry) {
+    return into(players).insertOnConflictUpdate(entry);
+  }
+
+  // Guardar el progreso de un jugador
+  Future<void> savePlayerProgress({
+    required int playerId,
+    required int level,
+    required int xp,
+    required int streak,
+  }) {
+    return upsertPlayer(PlayersCompanion(
+      id: Value(playerId),
+      level: Value(level),
+      xp: Value(xp),
+      streak: Value(streak),
+    ));
+  }
+
+  // --- VERSIÓN CORREGIDA DE saveSelectedHabits ---
+  Future<void> saveSelectedHabits({
+    required int playerId,
+    required Set<String> habits,
+  }) async {
+    // Usa el método 'update' para modificar un registro existente
+    await (update(players)..where((tbl) => tbl.id.equals(playerId))).write(
+      // Pasa un 'Companion' con solo los campos que quieres cambiar
+      PlayersCompanion(
+        selectedHabits: Value(habits.join(',')),
+        hasSelectedHabits: const Value(true),
+      ),
+    );
+    print('Hábitos actualizados para el jugador con ID: $playerId');
+  }
 }
