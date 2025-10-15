@@ -1,0 +1,42 @@
+name: level_up
+description: "Una aplicación de hábitos gamificados."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.1 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Paquetes de UI y utilidades
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  http: ^1.2.1 # Versión fijada
+  path_provider: ^2.1.3
+  path: ^1.9.0
+
+  # Paquetes para la base de datos local (SQLite con Drift)
+  drift: ^2.18.0
+  sqlite3_flutter_libs: ^0.5.22
+
+  # Lo mantenemos por ahora, aunque Drift ya maneja la mayoría de datos
+  shared_preferences: ^2.2.3 # Versión fijada
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^4.0.0
+
+  # Paquetes de desarrollo para Drift
+  drift_dev: ^2.18.0
+  build_runner: ^2.4.11
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/mi_logo.png # Asegúrate que esta ruta es correcta en tu proyecto
