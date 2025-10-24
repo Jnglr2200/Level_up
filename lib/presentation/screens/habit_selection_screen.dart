@@ -67,8 +67,7 @@ class _HabitSelectionScreenState extends State<HabitSelectionScreen> {
                 onPressed: _selectedCategories.isEmpty
                     ? null
                     : () async {
-                  await PlayerDataService().saveSelectedHabits(
-                    playerId: widget.player.id,
+                  await PlayerDataService.instance.saveSelectedHabits(                    playerId: widget.player.id,
                     habits: _selectedCategories,
                   );
 

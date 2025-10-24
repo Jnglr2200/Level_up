@@ -79,21 +79,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     child: const Text('Registrarse'),
+// lib/presentation/screens/signup_screen.dart
+
                     onPressed: () async {
                       if (_formKey.currentState?.validate() ?? false) {
                         final email = _emailController.text;
                         final password = _passwordController.text;
                         final name = _nameController.text;
 
-                        // 1. Registra al jugador
-                        await PlayerDataService().registerPlayer(
+                        // --- ARREGLO 1: Usar el Singleton y Comprobar el Email ---
+                        final service = PlayerDataService.instance; // Llama a la instancia única
+
+                        final emailExists = await service.checkEmailExists(email);
+                        if (emailExists) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Ese email ya está en uso. Por favor, intenta con otro.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return; // Detiene la ejecución si el email existe
+                        }
+                        // --------------------------------------------------------
+
+                        // 1. Registra al jugador (usando el singleton)
+                        await service.registerPlayer(
                           name: name,
                           email: email,
                           password: password,
                         );
 
-                        // 2. Inicia sesión para obtener el objeto Player
-                        final player = await PlayerDataService().login(email, password);
+                        // 2. Inicia sesión (usando el singleton)
+                        final player = await service.login(email, password);
 
                         // 3. Navega pasándole el objeto Player
                         if (player != null && mounted) {
@@ -104,8 +122,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           );
                         }
                       }
-                    },
-                  ),
+                    },                  ),
                 ),
               ],
             ),

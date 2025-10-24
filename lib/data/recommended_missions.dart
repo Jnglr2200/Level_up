@@ -1,5 +1,5 @@
-// lib/data/recommended_missions.dart
-import 'models/exercise_model.dart';
+/* lib/data/recommended_missions.dart
+import 'models/mission_bank.dart';
 
 final List<Exercise> recommendedMissions = [
   Exercise(
@@ -31,4 +31,4 @@ final List<Exercise> recommendedMissions = [
     instructions: 'Haz 20 sentadillas profundas. Opcional: sostén algo de peso.',
   ),
   // He eliminado la misión de "Burpees" para dejar solo 4.
-];
+];*/

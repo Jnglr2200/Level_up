@@ -1,7 +1,7 @@
-import 'dart:convert';
+/*import 'dart:convert';
 import 'package:http/http.dart' as http; // <-- Asegúrate de que esta línea esté así
 import 'dart:math'; // Importa la librería de matemáticas para el generador aleatorio
-import '../models/exercise_model.dart';
+import '../models/mission_bank.dart';
 
 class ExerciseService {
   final String _apiKey = 'syT/9sYr/y9C8nq1/3DGrw==zB6001nZpWuSkLEE'; // <-- IMPORTANTE: Consigue tu clave en la web de API Ninjas
@@ -37,4 +37,4 @@ class ExerciseService {
       throw Exception('Fallo al conectar con el servidor: $e');
     }
   }
-}
+}*/

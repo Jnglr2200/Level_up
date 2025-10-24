@@ -62,6 +62,22 @@ class $PlayersTable extends Players with TableInfo<$PlayersTable, Player> {
   late final GeneratedColumn<String> selectedHabits = GeneratedColumn<String>(
       'selected_habits', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _totalMissionsMeta =
+      const VerificationMeta('totalMissions');
+  @override
+  late final GeneratedColumn<int> totalMissions = GeneratedColumn<int>(
+      'total_missions', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _maxStreakMeta =
+      const VerificationMeta('maxStreak');
+  @override
+  late final GeneratedColumn<int> maxStreak = GeneratedColumn<int>(
+      'max_streak', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   static const VerificationMeta _hasSelectedHabitsMeta =
       const VerificationMeta('hasSelectedHabits');
   @override
@@ -72,6 +88,18 @@ class $PlayersTable extends Players with TableInfo<$PlayersTable, Player> {
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("has_selected_habits" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _lastMissionDateMeta =
+      const VerificationMeta('lastMissionDate');
+  @override
+  late final GeneratedColumn<String> lastMissionDate = GeneratedColumn<String>(
+      'last_mission_date', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _activeMissionIdsMeta =
+      const VerificationMeta('activeMissionIds');
+  @override
+  late final GeneratedColumn<String> activeMissionIds = GeneratedColumn<String>(
+      'active_mission_ids', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -82,7 +110,11 @@ class $PlayersTable extends Players with TableInfo<$PlayersTable, Player> {
         xp,
         streak,
         selectedHabits,
-        hasSelectedHabits
+        totalMissions,
+        maxStreak,
+        hasSelectedHabits,
+        lastMissionDate,
+        activeMissionIds
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -132,11 +164,33 @@ class $PlayersTable extends Players with TableInfo<$PlayersTable, Player> {
           selectedHabits.isAcceptableOrUnknown(
               data['selected_habits']!, _selectedHabitsMeta));
     }
+    if (data.containsKey('total_missions')) {
+      context.handle(
+          _totalMissionsMeta,
+          totalMissions.isAcceptableOrUnknown(
+              data['total_missions']!, _totalMissionsMeta));
+    }
+    if (data.containsKey('max_streak')) {
+      context.handle(_maxStreakMeta,
+          maxStreak.isAcceptableOrUnknown(data['max_streak']!, _maxStreakMeta));
+    }
     if (data.containsKey('has_selected_habits')) {
       context.handle(
           _hasSelectedHabitsMeta,
           hasSelectedHabits.isAcceptableOrUnknown(
               data['has_selected_habits']!, _hasSelectedHabitsMeta));
+    }
+    if (data.containsKey('last_mission_date')) {
+      context.handle(
+          _lastMissionDateMeta,
+          lastMissionDate.isAcceptableOrUnknown(
+              data['last_mission_date']!, _lastMissionDateMeta));
+    }
+    if (data.containsKey('active_mission_ids')) {
+      context.handle(
+          _activeMissionIdsMeta,
+          activeMissionIds.isAcceptableOrUnknown(
+              data['active_mission_ids']!, _activeMissionIdsMeta));
     }
     return context;
   }
@@ -163,8 +217,16 @@ class $PlayersTable extends Players with TableInfo<$PlayersTable, Player> {
           .read(DriftSqlType.int, data['${effectivePrefix}streak'])!,
       selectedHabits: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}selected_habits']),
+      totalMissions: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}total_missions'])!,
+      maxStreak: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}max_streak'])!,
       hasSelectedHabits: attachedDatabase.typeMapping.read(
           DriftSqlType.bool, data['${effectivePrefix}has_selected_habits'])!,
+      lastMissionDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}last_mission_date']),
+      activeMissionIds: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}active_mission_ids']),
     );
   }
 
@@ -183,7 +245,11 @@ class Player extends DataClass implements Insertable<Player> {
   final int xp;
   final int streak;
   final String? selectedHabits;
+  final int totalMissions;
+  final int maxStreak;
   final bool hasSelectedHabits;
+  final String? lastMissionDate;
+  final String? activeMissionIds;
   const Player(
       {required this.id,
       required this.name,
@@ -193,7 +259,11 @@ class Player extends DataClass implements Insertable<Player> {
       required this.xp,
       required this.streak,
       this.selectedHabits,
-      required this.hasSelectedHabits});
+      required this.totalMissions,
+      required this.maxStreak,
+      required this.hasSelectedHabits,
+      this.lastMissionDate,
+      this.activeMissionIds});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -207,7 +277,15 @@ class Player extends DataClass implements Insertable<Player> {
     if (!nullToAbsent || selectedHabits != null) {
       map['selected_habits'] = Variable<String>(selectedHabits);
     }
+    map['total_missions'] = Variable<int>(totalMissions);
+    map['max_streak'] = Variable<int>(maxStreak);
     map['has_selected_habits'] = Variable<bool>(hasSelectedHabits);
+    if (!nullToAbsent || lastMissionDate != null) {
+      map['last_mission_date'] = Variable<String>(lastMissionDate);
+    }
+    if (!nullToAbsent || activeMissionIds != null) {
+      map['active_mission_ids'] = Variable<String>(activeMissionIds);
+    }
     return map;
   }
 
@@ -223,7 +301,15 @@ class Player extends DataClass implements Insertable<Player> {
       selectedHabits: selectedHabits == null && nullToAbsent
           ? const Value.absent()
           : Value(selectedHabits),
+      totalMissions: Value(totalMissions),
+      maxStreak: Value(maxStreak),
       hasSelectedHabits: Value(hasSelectedHabits),
+      lastMissionDate: lastMissionDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastMissionDate),
+      activeMissionIds: activeMissionIds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(activeMissionIds),
     );
   }
 
@@ -239,7 +325,11 @@ class Player extends DataClass implements Insertable<Player> {
       xp: serializer.fromJson<int>(json['xp']),
       streak: serializer.fromJson<int>(json['streak']),
       selectedHabits: serializer.fromJson<String?>(json['selectedHabits']),
+      totalMissions: serializer.fromJson<int>(json['totalMissions']),
+      maxStreak: serializer.fromJson<int>(json['maxStreak']),
       hasSelectedHabits: serializer.fromJson<bool>(json['hasSelectedHabits']),
+      lastMissionDate: serializer.fromJson<String?>(json['lastMissionDate']),
+      activeMissionIds: serializer.fromJson<String?>(json['activeMissionIds']),
     );
   }
   @override
@@ -254,7 +344,11 @@ class Player extends DataClass implements Insertable<Player> {
       'xp': serializer.toJson<int>(xp),
       'streak': serializer.toJson<int>(streak),
       'selectedHabits': serializer.toJson<String?>(selectedHabits),
+      'totalMissions': serializer.toJson<int>(totalMissions),
+      'maxStreak': serializer.toJson<int>(maxStreak),
       'hasSelectedHabits': serializer.toJson<bool>(hasSelectedHabits),
+      'lastMissionDate': serializer.toJson<String?>(lastMissionDate),
+      'activeMissionIds': serializer.toJson<String?>(activeMissionIds),
     };
   }
 
@@ -267,7 +361,11 @@ class Player extends DataClass implements Insertable<Player> {
           int? xp,
           int? streak,
           Value<String?> selectedHabits = const Value.absent(),
-          bool? hasSelectedHabits}) =>
+          int? totalMissions,
+          int? maxStreak,
+          bool? hasSelectedHabits,
+          Value<String?> lastMissionDate = const Value.absent(),
+          Value<String?> activeMissionIds = const Value.absent()}) =>
       Player(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -278,7 +376,15 @@ class Player extends DataClass implements Insertable<Player> {
         streak: streak ?? this.streak,
         selectedHabits:
             selectedHabits.present ? selectedHabits.value : this.selectedHabits,
+        totalMissions: totalMissions ?? this.totalMissions,
+        maxStreak: maxStreak ?? this.maxStreak,
         hasSelectedHabits: hasSelectedHabits ?? this.hasSelectedHabits,
+        lastMissionDate: lastMissionDate.present
+            ? lastMissionDate.value
+            : this.lastMissionDate,
+        activeMissionIds: activeMissionIds.present
+            ? activeMissionIds.value
+            : this.activeMissionIds,
       );
   Player copyWithCompanion(PlayersCompanion data) {
     return Player(
@@ -292,9 +398,19 @@ class Player extends DataClass implements Insertable<Player> {
       selectedHabits: data.selectedHabits.present
           ? data.selectedHabits.value
           : this.selectedHabits,
+      totalMissions: data.totalMissions.present
+          ? data.totalMissions.value
+          : this.totalMissions,
+      maxStreak: data.maxStreak.present ? data.maxStreak.value : this.maxStreak,
       hasSelectedHabits: data.hasSelectedHabits.present
           ? data.hasSelectedHabits.value
           : this.hasSelectedHabits,
+      lastMissionDate: data.lastMissionDate.present
+          ? data.lastMissionDate.value
+          : this.lastMissionDate,
+      activeMissionIds: data.activeMissionIds.present
+          ? data.activeMissionIds.value
+          : this.activeMissionIds,
     );
   }
 
@@ -309,14 +425,30 @@ class Player extends DataClass implements Insertable<Player> {
           ..write('xp: $xp, ')
           ..write('streak: $streak, ')
           ..write('selectedHabits: $selectedHabits, ')
-          ..write('hasSelectedHabits: $hasSelectedHabits')
+          ..write('totalMissions: $totalMissions, ')
+          ..write('maxStreak: $maxStreak, ')
+          ..write('hasSelectedHabits: $hasSelectedHabits, ')
+          ..write('lastMissionDate: $lastMissionDate, ')
+          ..write('activeMissionIds: $activeMissionIds')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, email, password, level, xp, streak,
-      selectedHabits, hasSelectedHabits);
+  int get hashCode => Object.hash(
+      id,
+      name,
+      email,
+      password,
+      level,
+      xp,
+      streak,
+      selectedHabits,
+      totalMissions,
+      maxStreak,
+      hasSelectedHabits,
+      lastMissionDate,
+      activeMissionIds);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -329,7 +461,11 @@ class Player extends DataClass implements Insertable<Player> {
           other.xp == this.xp &&
           other.streak == this.streak &&
           other.selectedHabits == this.selectedHabits &&
-          other.hasSelectedHabits == this.hasSelectedHabits);
+          other.totalMissions == this.totalMissions &&
+          other.maxStreak == this.maxStreak &&
+          other.hasSelectedHabits == this.hasSelectedHabits &&
+          other.lastMissionDate == this.lastMissionDate &&
+          other.activeMissionIds == this.activeMissionIds);
 }
 
 class PlayersCompanion extends UpdateCompanion<Player> {
@@ -341,7 +477,11 @@ class PlayersCompanion extends UpdateCompanion<Player> {
   final Value<int> xp;
   final Value<int> streak;
   final Value<String?> selectedHabits;
+  final Value<int> totalMissions;
+  final Value<int> maxStreak;
   final Value<bool> hasSelectedHabits;
+  final Value<String?> lastMissionDate;
+  final Value<String?> activeMissionIds;
   const PlayersCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -351,7 +491,11 @@ class PlayersCompanion extends UpdateCompanion<Player> {
     this.xp = const Value.absent(),
     this.streak = const Value.absent(),
     this.selectedHabits = const Value.absent(),
+    this.totalMissions = const Value.absent(),
+    this.maxStreak = const Value.absent(),
     this.hasSelectedHabits = const Value.absent(),
+    this.lastMissionDate = const Value.absent(),
+    this.activeMissionIds = const Value.absent(),
   });
   PlayersCompanion.insert({
     this.id = const Value.absent(),
@@ -362,7 +506,11 @@ class PlayersCompanion extends UpdateCompanion<Player> {
     this.xp = const Value.absent(),
     this.streak = const Value.absent(),
     this.selectedHabits = const Value.absent(),
+    this.totalMissions = const Value.absent(),
+    this.maxStreak = const Value.absent(),
     this.hasSelectedHabits = const Value.absent(),
+    this.lastMissionDate = const Value.absent(),
+    this.activeMissionIds = const Value.absent(),
   })  : name = Value(name),
         email = Value(email),
         password = Value(password);
@@ -375,7 +523,11 @@ class PlayersCompanion extends UpdateCompanion<Player> {
     Expression<int>? xp,
     Expression<int>? streak,
     Expression<String>? selectedHabits,
+    Expression<int>? totalMissions,
+    Expression<int>? maxStreak,
     Expression<bool>? hasSelectedHabits,
+    Expression<String>? lastMissionDate,
+    Expression<String>? activeMissionIds,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -386,7 +538,11 @@ class PlayersCompanion extends UpdateCompanion<Player> {
       if (xp != null) 'xp': xp,
       if (streak != null) 'streak': streak,
       if (selectedHabits != null) 'selected_habits': selectedHabits,
+      if (totalMissions != null) 'total_missions': totalMissions,
+      if (maxStreak != null) 'max_streak': maxStreak,
       if (hasSelectedHabits != null) 'has_selected_habits': hasSelectedHabits,
+      if (lastMissionDate != null) 'last_mission_date': lastMissionDate,
+      if (activeMissionIds != null) 'active_mission_ids': activeMissionIds,
     });
   }
 
@@ -399,7 +555,11 @@ class PlayersCompanion extends UpdateCompanion<Player> {
       Value<int>? xp,
       Value<int>? streak,
       Value<String?>? selectedHabits,
-      Value<bool>? hasSelectedHabits}) {
+      Value<int>? totalMissions,
+      Value<int>? maxStreak,
+      Value<bool>? hasSelectedHabits,
+      Value<String?>? lastMissionDate,
+      Value<String?>? activeMissionIds}) {
     return PlayersCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -409,7 +569,11 @@ class PlayersCompanion extends UpdateCompanion<Player> {
       xp: xp ?? this.xp,
       streak: streak ?? this.streak,
       selectedHabits: selectedHabits ?? this.selectedHabits,
+      totalMissions: totalMissions ?? this.totalMissions,
+      maxStreak: maxStreak ?? this.maxStreak,
       hasSelectedHabits: hasSelectedHabits ?? this.hasSelectedHabits,
+      lastMissionDate: lastMissionDate ?? this.lastMissionDate,
+      activeMissionIds: activeMissionIds ?? this.activeMissionIds,
     );
   }
 
@@ -440,8 +604,20 @@ class PlayersCompanion extends UpdateCompanion<Player> {
     if (selectedHabits.present) {
       map['selected_habits'] = Variable<String>(selectedHabits.value);
     }
+    if (totalMissions.present) {
+      map['total_missions'] = Variable<int>(totalMissions.value);
+    }
+    if (maxStreak.present) {
+      map['max_streak'] = Variable<int>(maxStreak.value);
+    }
     if (hasSelectedHabits.present) {
       map['has_selected_habits'] = Variable<bool>(hasSelectedHabits.value);
+    }
+    if (lastMissionDate.present) {
+      map['last_mission_date'] = Variable<String>(lastMissionDate.value);
+    }
+    if (activeMissionIds.present) {
+      map['active_mission_ids'] = Variable<String>(activeMissionIds.value);
     }
     return map;
   }
@@ -457,7 +633,11 @@ class PlayersCompanion extends UpdateCompanion<Player> {
           ..write('xp: $xp, ')
           ..write('streak: $streak, ')
           ..write('selectedHabits: $selectedHabits, ')
-          ..write('hasSelectedHabits: $hasSelectedHabits')
+          ..write('totalMissions: $totalMissions, ')
+          ..write('maxStreak: $maxStreak, ')
+          ..write('hasSelectedHabits: $hasSelectedHabits, ')
+          ..write('lastMissionDate: $lastMissionDate, ')
+          ..write('activeMissionIds: $activeMissionIds')
           ..write(')'))
         .toString();
   }
@@ -483,7 +663,11 @@ typedef $$PlayersTableCreateCompanionBuilder = PlayersCompanion Function({
   Value<int> xp,
   Value<int> streak,
   Value<String?> selectedHabits,
+  Value<int> totalMissions,
+  Value<int> maxStreak,
   Value<bool> hasSelectedHabits,
+  Value<String?> lastMissionDate,
+  Value<String?> activeMissionIds,
 });
 typedef $$PlayersTableUpdateCompanionBuilder = PlayersCompanion Function({
   Value<int> id,
@@ -494,7 +678,11 @@ typedef $$PlayersTableUpdateCompanionBuilder = PlayersCompanion Function({
   Value<int> xp,
   Value<int> streak,
   Value<String?> selectedHabits,
+  Value<int> totalMissions,
+  Value<int> maxStreak,
   Value<bool> hasSelectedHabits,
+  Value<String?> lastMissionDate,
+  Value<String?> activeMissionIds,
 });
 
 class $$PlayersTableFilterComposer
@@ -531,8 +719,22 @@ class $$PlayersTableFilterComposer
       column: $table.selectedHabits,
       builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<int> get totalMissions => $composableBuilder(
+      column: $table.totalMissions, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get maxStreak => $composableBuilder(
+      column: $table.maxStreak, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<bool> get hasSelectedHabits => $composableBuilder(
       column: $table.hasSelectedHabits,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get lastMissionDate => $composableBuilder(
+      column: $table.lastMissionDate,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get activeMissionIds => $composableBuilder(
+      column: $table.activeMissionIds,
       builder: (column) => ColumnFilters(column));
 }
 
@@ -570,8 +772,23 @@ class $$PlayersTableOrderingComposer
       column: $table.selectedHabits,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get totalMissions => $composableBuilder(
+      column: $table.totalMissions,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get maxStreak => $composableBuilder(
+      column: $table.maxStreak, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get hasSelectedHabits => $composableBuilder(
       column: $table.hasSelectedHabits,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get lastMissionDate => $composableBuilder(
+      column: $table.lastMissionDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get activeMissionIds => $composableBuilder(
+      column: $table.activeMissionIds,
       builder: (column) => ColumnOrderings(column));
 }
 
@@ -608,8 +825,20 @@ class $$PlayersTableAnnotationComposer
   GeneratedColumn<String> get selectedHabits => $composableBuilder(
       column: $table.selectedHabits, builder: (column) => column);
 
+  GeneratedColumn<int> get totalMissions => $composableBuilder(
+      column: $table.totalMissions, builder: (column) => column);
+
+  GeneratedColumn<int> get maxStreak =>
+      $composableBuilder(column: $table.maxStreak, builder: (column) => column);
+
   GeneratedColumn<bool> get hasSelectedHabits => $composableBuilder(
       column: $table.hasSelectedHabits, builder: (column) => column);
+
+  GeneratedColumn<String> get lastMissionDate => $composableBuilder(
+      column: $table.lastMissionDate, builder: (column) => column);
+
+  GeneratedColumn<String> get activeMissionIds => $composableBuilder(
+      column: $table.activeMissionIds, builder: (column) => column);
 }
 
 class $$PlayersTableTableManager extends RootTableManager<
@@ -643,7 +872,11 @@ class $$PlayersTableTableManager extends RootTableManager<
             Value<int> xp = const Value.absent(),
             Value<int> streak = const Value.absent(),
             Value<String?> selectedHabits = const Value.absent(),
+            Value<int> totalMissions = const Value.absent(),
+            Value<int> maxStreak = const Value.absent(),
             Value<bool> hasSelectedHabits = const Value.absent(),
+            Value<String?> lastMissionDate = const Value.absent(),
+            Value<String?> activeMissionIds = const Value.absent(),
           }) =>
               PlayersCompanion(
             id: id,
@@ -654,7 +887,11 @@ class $$PlayersTableTableManager extends RootTableManager<
             xp: xp,
             streak: streak,
             selectedHabits: selectedHabits,
+            totalMissions: totalMissions,
+            maxStreak: maxStreak,
             hasSelectedHabits: hasSelectedHabits,
+            lastMissionDate: lastMissionDate,
+            activeMissionIds: activeMissionIds,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -665,7 +902,11 @@ class $$PlayersTableTableManager extends RootTableManager<
             Value<int> xp = const Value.absent(),
             Value<int> streak = const Value.absent(),
             Value<String?> selectedHabits = const Value.absent(),
+            Value<int> totalMissions = const Value.absent(),
+            Value<int> maxStreak = const Value.absent(),
             Value<bool> hasSelectedHabits = const Value.absent(),
+            Value<String?> lastMissionDate = const Value.absent(),
+            Value<String?> activeMissionIds = const Value.absent(),
           }) =>
               PlayersCompanion.insert(
             id: id,
@@ -676,7 +917,11 @@ class $$PlayersTableTableManager extends RootTableManager<
             xp: xp,
             streak: streak,
             selectedHabits: selectedHabits,
+            totalMissions: totalMissions,
+            maxStreak: maxStreak,
             hasSelectedHabits: hasSelectedHabits,
+            lastMissionDate: lastMissionDate,
+            activeMissionIds: activeMissionIds,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

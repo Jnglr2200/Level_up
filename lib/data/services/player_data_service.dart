@@ -2,8 +2,9 @@ import '../database/local_database.dart';
 import 'package:drift/drift.dart';
 
 class PlayerDataService {
-  // Solo necesitamos una instancia de nuestra base de datos inteligente
-  final AppDatabase _db = AppDatabase();
+  static final PlayerDataService instance = PlayerDataService._();
+  PlayerDataService._();
+  final AppDatabase _db = AppDatabase.instance; // <-- Usa la instancia única
 
   Future<Player?> login(String email, String password) async {
     final player = await _db.getPlayerByEmail(email);
@@ -33,12 +34,16 @@ class PlayerDataService {
     required int level,
     required int xp,
     required int streak,
+    required int totalMissions,
+    required int maxStreak,
   }) {
     return _db.savePlayerProgress(
       playerId: playerId,
       level: level,
       xp: xp,
       streak: streak,
+      totalMissions: totalMissions,
+      maxStreak: maxStreak,
     );
   }
 
@@ -48,5 +53,11 @@ class PlayerDataService {
   }) {
     // Esta llamada ya es correcta y no necesita cambios
     return _db.saveSelectedHabits(playerId: playerId, habits: habits);
+  }
+  Future<Player?> refreshPlayer(int playerId) {
+    return _db.getPlayerById(playerId);
+  }
+  Future<bool> checkEmailExists(String email) {
+    return _db.checkEmailExists(email);
   }
 }

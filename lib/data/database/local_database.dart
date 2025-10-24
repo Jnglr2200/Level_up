@@ -17,14 +17,20 @@ class Players extends Table {
   IntColumn get xp => integer().withDefault(const Constant(0))();
   IntColumn get streak => integer().withDefault(const Constant(0))();
   TextColumn get selectedHabits => text().nullable()();
+  IntColumn get totalMissions => integer().withDefault(const Constant(0))();
+  IntColumn get maxStreak => integer().withDefault(const Constant(0))();
   BoolColumn get hasSelectedHabits => boolean().withDefault(const Constant(false))();
 }
 
 @DriftDatabase(tables: [Players])
 class AppDatabase extends _$AppDatabase {
-  // El constructor ahora es súper simple
-  AppDatabase() : super(connect());
+  static final AppDatabase instance = AppDatabase._();
+  AppDatabase._() : super(connect()); // Constructor privado
 
+  Future<bool> checkEmailExists(String email) async {
+    final existingPlayer = await getPlayerByEmail(email);
+    return existingPlayer != null; // Devuelve true si el jugador ya existe
+  }
   @override
   int get schemaVersion => 1;
 
@@ -41,13 +47,28 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // Guardar el progreso de un jugador
+// En lib/data/database/local_database.dart
+
+  // --- REEMPLAZA ESTE MÉTODO ---
   Future<void> savePlayerProgress({
     required int playerId,
     required int level,
     required int xp,
     required int streak,
-  }) {
-    return upsertPlayer(PlayersCompanion(
+    required int totalMissions,
+    required int maxStreak,
+  }) async {
+    // Usa el método 'update' para modificar solo los campos de progreso
+    await (update(players)..where((tbl) => tbl.id.equals(playerId))).write(
+      // Pasa un 'Companion' con solo los campos que quieres cambiar
+      PlayersCompanion(
+        level: Value(level),
+        xp: Value(xp),
+        streak: Value(streak),
+      ),
+    );
+    print('Progreso guardado: Nivel $level, XP $xp');
+      return upsertPlayer(PlayersCompanion(
       id: Value(playerId),
       level: Value(level),
       xp: Value(xp),
@@ -69,5 +90,8 @@ class AppDatabase extends _$AppDatabase {
       ),
     );
     print('Hábitos actualizados para el jugador con ID: $playerId');
+  }
+  Future<Player?> getPlayerById(int id) {
+    return (select(players)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
   }
 }

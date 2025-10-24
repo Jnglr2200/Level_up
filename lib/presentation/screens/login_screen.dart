@@ -94,8 +94,7 @@ class _SignInPage1State extends State<SignInPage1> {
                           if (_formKey.currentState?.validate() ?? false) {
                             final email = _emailController.text;
                             final password = _passwordController.text;
-                            final player = await PlayerDataService().login(email, password);
-
+                            final player = await PlayerDataService.instance.login(email, password);
                             if (player != null && mounted) {
                               if (player.hasSelectedHabits) {
                                 // --- CORRECCIÓN 2: PASAR EL JUGADOR AL NAVIGATOR ---
