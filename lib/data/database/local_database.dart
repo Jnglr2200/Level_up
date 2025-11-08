@@ -20,6 +20,28 @@ class Players extends Table {
   IntColumn get totalMissions => integer().withDefault(const Constant(0))();
   IntColumn get maxStreak => integer().withDefault(const Constant(0))();
   BoolColumn get hasSelectedHabits => boolean().withDefault(const Constant(false))();
+  TextColumn get lastMissionDate => text().nullable()();
+  TextColumn get activeMissionIds => text().nullable()();
+}
+class MissionBank extends Table {
+  TextColumn get id => text()(); // 'ex_01', 'al_01', etc.
+  TextColumn get title => text()();
+  TextColumn get description => text()();
+  IntColumn get xp => integer()();
+  TextColumn get difficulty => text()();
+  TextColumn get category => text()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class DailyMissions extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get playerId => integer().references(Players, #id)();
+  TextColumn get missionId => text().references(MissionBank, #id)();
+  IntColumn get progress => integer().withDefault(const Constant(0))();
+  BoolColumn get isCompleted => boolean().withDefault(const Constant(false))();
+  TextColumn get date => text()(); // 'YYYY-MM-DD'
 }
 
 @DriftDatabase(tables: [Players])
@@ -93,5 +115,14 @@ class AppDatabase extends _$AppDatabase {
   }
   Future<Player?> getPlayerById(int id) {
     return (select(players)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+  }
+  Future<void> saveActiveMissions(int playerId, String date, String missionIds) async {
+    // Esta es la lógica real de la base de datos
+    await (update(players)..where((tbl) => tbl.id.equals(playerId))).write(
+      PlayersCompanion(
+        lastMissionDate: Value(date),
+        activeMissionIds: Value(missionIds),
+      ),
+    );
   }
 }

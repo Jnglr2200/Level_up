@@ -4,6 +4,7 @@ import 'main_navigator.dart';
 import 'habit_selection_screen.dart';
 import 'signup_screen.dart';
 import '../../data/services/player_data_service.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // <-- Importa esto
 
 class SignInPage1 extends StatefulWidget {
   const SignInPage1({super.key});
@@ -90,31 +91,38 @@ class _SignInPage1State extends State<SignInPage1> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () async {
-                          if (_formKey.currentState?.validate() ?? false) {
-                            final email = _emailController.text;
-                            final password = _passwordController.text;
-                            final player = await PlayerDataService.instance.login(email, password);
-                            if (player != null && mounted) {
-                              if (player.hasSelectedHabits) {
-                                // --- CORRECCIÓN 2: PASAR EL JUGADOR AL NAVIGATOR ---
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => MainNavigator(player: player)),
-                                );
+                          onPressed: () async {
+                            if (_formKey.currentState?.validate() ?? false) {
+                              final email = _emailController.text;
+                              final password = _passwordController.text;
+                              final player = await PlayerDataService.instance.login(email, password);
+
+                              if (player != null && mounted) {
+                                // --- LÍNEA CLAVE AÑADIDA ---
+                                // 1. Guarda el ID del jugador en el dispositivo
+                                final prefs = await SharedPreferences.getInstance();
+                                await prefs.setInt('loggedInPlayerId', player.id);
+                                // -----------------------------
+
+                                // 2. Navega a la pantalla correspondiente
+                                if (player.hasSelectedHabits) {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => MainNavigator(player: player)),
+                                  );
+                                } else {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => HabitSelectionScreen(player: player)),
+                                  );
+                                }
                               } else {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => HabitSelectionScreen(player: player)),
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Email o contraseña incorrectos.')),
                                 );
                               }
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Email o contraseña incorrectos.')),
-                              );
                             }
-                          }
-                        },
+                          },
                         child: const Padding(
                           padding: EdgeInsets.all(10.0),
                           child: Text('Sign in'),

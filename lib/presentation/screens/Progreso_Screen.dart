@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../data/database/local_database.dart';
+import 'login_screen.dart'; // <-- Importa esto
+import 'package:shared_preferences/shared_preferences.dart'; // <-- Importa esto
 import '../../data/services/player_data_service.dart';
 
 class ProgresoScreen extends StatefulWidget {
@@ -21,7 +23,19 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
     super.initState();
     _loadPlayerData();
   }
+  Future<void> _logout() async {
+    // 1. Borra el ID guardado
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('loggedInPlayerId');
 
+    // 2. Navega de vuelta al Login y borra todas las pantallas anteriores
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const SignInPage1()),
+            (Route<dynamic> route) => false, // Esto borra el historial de navegación
+      );
+    }
+  }
   // Usamos 'didUpdateWidget' para recargar si el jugador cambia
   // y 'AutomaticKeepAliveClientMixin' podría ser mejor, pero esto funciona
   // por ahora para refrescar al cambiar de pestaña.
@@ -72,6 +86,11 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadPlayerData,
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
+            tooltip: 'Cerrar Sesión',
+            onPressed: _logout,
           ),
         ],
       ),

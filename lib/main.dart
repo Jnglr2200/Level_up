@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart'; // Para las nuevas fuentes
 import 'presentation/screens/login_screen.dart';
-
+import 'presentation/screens/auth_wrapper.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -100,7 +100,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const SignInPage1(),
+        home: const AuthWrapper()
     );
   }
 }

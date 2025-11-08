@@ -6,7 +6,8 @@ import '../../data/database/local_database.dart';
 import '../../data/models/mission_model.dart';
 import '../../data/services/player_data_service.dart';
 import '../../data/services/mission_generator_service.dart';
-
+import '../../data/models/mission_bank.dart';
+import '../../data/services/mission_service.dart';
 class MisionesScreen extends StatefulWidget {
   final Player player;
   const MisionesScreen({super.key, required this.player});
@@ -16,90 +17,115 @@ class MisionesScreen extends StatefulWidget {
 }
 
 class _MisionesScreenState extends State<MisionesScreen> {
-  // --- Estado del Jugador ---
-  // Estos se cargarán desde la base de datos
+  // --- (El estado del jugador no cambia) ---
   late String _userName;
   late int _level;
   late int _currentExp;
   late int _streakCount;
   late int _totalMissions;
   late int _maxStreak;
-  final int _maxExp = 100; // XP necesario para subir de nivel
+  final int _maxExp = 100;
 
-  // --- Estado de la Pantalla ---
   List<Mission> _dailyMissions = [];
   bool _isLoading = true;
+  final missionService = MissionService.instance;
+  final playerService = PlayerDataService.instance;
 
   @override
   void initState() {
     super.initState();
-    // Carga los datos frescos y genera las misiones cuando la pantalla se inicia
     _loadAndGenerateMissions();
   }
 
-  /// Carga los datos más recientes del jugador desde la BD y genera las misiones del día.
+  /// Devuelve la fecha de hoy en formato YYYY-MM-DD
+  String _getTodayDate() {
+    final now = DateTime.now();
+    return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+  }
+
+  /// Lógica principal de carga y generación
   Future<void> _loadAndGenerateMissions() async {
     print("MISIONES_SCREEN: Iniciando carga de datos...");
 
-    // 1. Llama al Singleton para obtener los datos más frescos
-    final freshPlayerData = await PlayerDataService.instance.refreshPlayer(widget.player.id);
-
-    print("MISIONES_SCREEN: Datos recibidos. Jugador: ${freshPlayerData?.name}");
-
+    final freshPlayerData = await PlayerDataService.instance.refreshPlayer(widget.player.id)
+        .then((p) async {
+      if (p == null) return null;
+      // Si el jugador no tiene fecha de misiones, inicialízala vacía
+      if (p.lastMissionDate == null) {
+        await PlayerDataService.instance.saveActiveMissions(p.id, '', '');
+      }
+      return PlayerDataService.instance.refreshPlayer(widget.player.id);
+    });
     if (freshPlayerData == null) {
       if (mounted) setState(() => _isLoading = false);
-      // Opcional: Mostrar un error
       return;
     }
 
-    // 2. Genera las misiones basadas en los hábitos del jugador
-    final selectedHabits = freshPlayerData.selectedHabits?.split(',').toSet() ?? {};
-    final generatedMissions = MissionGeneratorService().generateDailyMissions(
-      selectedHabits: selectedHabits,
-      missionCount: 4, // Límite de 4 misiones diarias
-    );
+    final today = _getTodayDate();
+    List<Mission> missionsToDisplay = [];
 
-    // 3. Actualiza el estado de la pantalla con todos los datos
+    // Comprueba si las misiones guardadas son de hoy
+    if (freshPlayerData.lastMissionDate == today) {
+      // --- ES EL MISMO DÍA: Cargar misiones guardadas ---
+      print("Cargando misiones guardadas para $today");
+      final savedIds = freshPlayerData.activeMissionIds?.split(',').toSet() ?? {};
+
+      if (savedIds.isNotEmpty) {
+        // Busca en el missionBank local los objetos Mission que coincidan con los IDs
+        missionsToDisplay = missionBank.where((mission) => savedIds.contains(mission.id)).toList();
+      }
+
+    } else {
+      // --- ES UN NUEVO DÍA: Generar nuevas misiones ---
+      print("Generando NUEVAS misiones para $today");
+      final selectedHabits = freshPlayerData.selectedHabits?.split(',').toSet() ?? {};
+      final newMissions = MissionGeneratorService().generateDailyMissions(
+        selectedHabits: selectedHabits,
+        missionCount: 4,
+      );
+
+      // Guarda la lista de IDs de las nuevas misiones en la BD
+      final missionIds = newMissions.map((m) => m.id).join(',');
+      await PlayerDataService.instance.saveActiveMissions(
+        widget.player.id,
+        today,
+        missionIds,
+      );
+      missionsToDisplay = newMissions;
+    }
+
+    // Actualiza el estado con los datos y las misiones
     setState(() {
-      // Datos del jugador
       _userName = freshPlayerData.name;
       _level = freshPlayerData.level;
       _currentExp = freshPlayerData.xp;
       _streakCount = freshPlayerData.streak;
       _totalMissions = freshPlayerData.totalMissions;
       _maxStreak = freshPlayerData.maxStreak;
-
-      // Misiones y carga
-      _dailyMissions = generatedMissions;
+      _dailyMissions = missionsToDisplay;
       _isLoading = false;
     });
   }
 
-  /// Se llama cuando el usuario completa una misión.
+  /// Se llama cuando el usuario completa una misión
   void _completeMission(Mission missionToComplete) async {
-    // 1. Actualiza el estado local de la UI inmediatamente
+    // 1. Actualiza el estado local (UI)
     setState(() {
       _currentExp += missionToComplete.xp;
       _totalMissions++;
-      _streakCount++; // (Puedes añadir lógica de reseteo de racha en otro lugar)
+      _streakCount++;
 
-      // Sube de nivel si es necesario
       if (_currentExp >= _maxExp) {
         _level++;
         _currentExp -= _maxExp;
-        // Opcional: Mostrar un diálogo de "¡Subiste de nivel!"
       }
-
-      // Revisa si la racha actual es un nuevo récord
       if (_streakCount > _maxStreak) {
         _maxStreak = _streakCount;
       }
-
-      // Elimina la misión de la lista
       _dailyMissions.remove(missionToComplete);
     });
 
-    // 2. Guarda el progreso en la base de datos (usando el Singleton)
+    // 2. Guarda el progreso (Nivel, XP, etc.)
     await PlayerDataService.instance.savePlayerProgress(
       playerId: widget.player.id,
       level: _level,
@@ -109,7 +135,15 @@ class _MisionesScreenState extends State<MisionesScreen> {
       maxStreak: _maxStreak,
     );
 
-    // 3. Muestra un mensaje de éxito
+    // 3. ACTUALIZA la lista de misiones activas en la BD
+    final remainingIds = _dailyMissions.map((m) => m.id).join(',');
+    await PlayerDataService.instance.saveActiveMissions(
+      widget.player.id,
+      _getTodayDate(), // Asegura que es de hoy
+      remainingIds,
+    );
+
+    // 4. Muestra el SnackBar
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -120,17 +154,15 @@ class _MisionesScreenState extends State<MisionesScreen> {
     }
   }
 
+  // --- (El resto del archivo: build, _buildPlayerHeader, etc. no cambia) ---
   @override
   Widget build(BuildContext context) {
-    // Muestra una pantalla de carga mientras se obtienen los datos
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: Color(0xFF1a1a2e), // Color de fondo del tema
+        backgroundColor: Color(0xFF1a1a2e),
         body: Center(child: CircularProgressIndicator()),
       );
     }
-
-    // Construye la pantalla principal
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
@@ -146,12 +178,8 @@ class _MisionesScreenState extends State<MisionesScreen> {
       ),
       body: Column(
         children: [
-          // --- Widget de Perfil y Barra de XP ---
           _buildPlayerHeader(),
-
           const Divider(color: Colors.blueGrey),
-
-          // --- Lista de Misiones ---
           Expanded(
             child: _dailyMissions.isEmpty
                 ? _buildMissionsCompleted()
@@ -162,7 +190,6 @@ class _MisionesScreenState extends State<MisionesScreen> {
     );
   }
 
-  /// Widget para la cabecera del jugador (Nivel y XP)
   Widget _buildPlayerHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -188,7 +215,6 @@ class _MisionesScreenState extends State<MisionesScreen> {
     );
   }
 
-  /// Widget para la lista de misiones
   Widget _buildMissionList() {
     return ListView.builder(
       padding: const EdgeInsets.all(8.0),
@@ -215,7 +241,6 @@ class _MisionesScreenState extends State<MisionesScreen> {
     );
   }
 
-  /// Widget que se muestra cuando no hay misiones
   Widget _buildMissionsCompleted() {
     return Center(
       child: Text(

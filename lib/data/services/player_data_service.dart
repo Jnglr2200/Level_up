@@ -60,4 +60,8 @@ class PlayerDataService {
   Future<bool> checkEmailExists(String email) {
     return _db.checkEmailExists(email);
   }
+  Future<void> saveActiveMissions(int playerId, String date, String missionIds) {
+    // Esto simplemente llama a la función de la base de datos
+    return _db.saveActiveMissions(playerId, date, missionIds);
+  }
 }
